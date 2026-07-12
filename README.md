@@ -89,7 +89,7 @@ STOP
 ```
 
 <p align="center">
-  <img src="documentation/remote-wiring-diagram.svg" alt="Remote-controller wiring diagram" width="750">
+  <img src="documentation/remote-wiring-diagram.png" alt="Remote-controller wiring diagram" width="750">
   <br>
   <em>Wiring diagram for the ESP32 remote controller.</em>
 </p>
@@ -118,7 +118,7 @@ The actuator unit contains an ESP32, an L298N motor driver, a 12 V DC gearmotor,
 The actuator ESP32 receives the wireless command and sets the motor-driver inputs accordingly.
 
 <p align="center">
-  <img src="documentation/actuator-wiring-diagram.svg" alt="Actuator-controller wiring diagram" width="750">
+  <img src="documentation/actuator-wiring-diagram.png" alt="Actuator-controller wiring diagram" width="750">
   <br>
   <em>Wiring diagram for the ESP32 actuator controller, L298N, and DC motor.</em>
 </p>
