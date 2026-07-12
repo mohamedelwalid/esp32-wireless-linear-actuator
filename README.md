@@ -1,12 +1,12 @@
 # QuAC ESP32 Control System
 
-Embedded control software and electronics for **QuAC — Quick Aorta Compressor**, developed as part of **TMM4121 – Product Development** at NTNU.
-
-QuAC was developed by a team of twelve Mechanical Engineering students as an educational prototype intended to automate external aortic compression during postpartum haemorrhage. My responsibilities were within **mechatronics and programming**, including ESP32 implementation, wireless communication, motor control, electronics integration, testing, and system integration.
-
-This repository documents the software and electronics portion of the project. The mechanical design, CAD development, manufacturing, structural analysis, and complete product-development process are documented separately in the project case study on my portfolio website.
+Embedded control software and electronics for **QuAC (Quick Aorta Compressor)**, a motorised external-compression prototype developed as part of **TMM4121 – Product Development** at NTNU.
 
 > **Educational prototype:** QuAC was developed as a student product-development project. It is not a certified medical device and is not intended for clinical use.
+
+QuAC was developed by a thirteen-person Mechanical Engineering student team. My responsibilities were within **mechatronics and programming**, shared with one other team member, and included ESP32 implementation, ESP-NOW communication, motor-control logic, electronics integration, testing, and troubleshooting.
+
+This repository documents the software and electronics portion of the project. The mechanical design, CAD development, manufacturing, structural analysis, and wider product-development process are documented separately in the project case study on my portfolio website.
 
 <p align="center">
   <img src="images/final-prototype.jpg" alt="Final QuAC prototype" width="600">
@@ -18,109 +18,97 @@ This repository documents the software and electronics portion of the project. T
 
 ## Overview
 
-QuAC is a motorised compression prototype designed to apply external pressure through a custom linear actuator.
+QuAC uses a motor-driven linear actuator to move a compression arm. The mechanism is controlled through a wireless handheld remote, allowing the operator to control the actuator without a wired connection to the main unit.
 
-The system uses two ESP32 development boards:
+The embedded system uses two ESP32 development boards:
 
-- One ESP32 is installed in the wireless remote controller.
-- One ESP32 is installed in the main unit and controls the actuator motor.
+- **Remote controller** — reads two push buttons and transmits movement commands.
+- **Actuator controller** — receives commands and controls a 12 V DC gearmotor through an L298N motor driver.
 
-The two boards communicate wirelessly using **ESP-NOW**. Button inputs from the remote controller are transmitted to the actuator controller, which drives a 12 V DC gearmotor through an L298N motor driver.
-
-The motor rotates a leadscrew through a gear transmission, converting rotational motion into linear movement of the compression arm.
+The two ESP32 boards communicate directly using **ESP-NOW**.
 
 ### Key Features
 
-- Wireless remote control using two ESP32 boards
-- ESP-NOW communication
+- Wireless control using two ESP32 boards
+- Direct ESP-NOW communication
 - Separate remote-controller and actuator-controller firmware
 - Bidirectional DC motor control
-- Motor direction controlled through two push buttons
-- Custom leadscrew-based linear actuator
-- L298N dual H-bridge motor driver
-- Portable battery-powered prototype
-- Electronics integrated into the complete mechanical system
+- Upward and downward actuator movement
+- Motor stop when neither button is pressed
+- Battery-powered remote and actuator units
+- Electronics integrated into the completed prototype
 
-During final testing, the complete prototype produced a measured compression force of **45.8 kg**, exceeding the project target of 40 kg. This was a prototype performance test and not a clinical validation. PRODUKTUTVIKLING.pdf
+The main control flow is:
 
----
-
-## System Architecture
-
-<p align="center">
-  <img src="documentation/system-architecture.png" alt="QuAC control-system architecture" width="750">
-  <br>
-  <em>System architecture showing communication between the remote controller and actuator controller.</em>
-</p>
-
-The system is divided into two main electronic units.
-
-### Remote Controller
-
-The remote controller contains:
-
-- ESP32 development board
-- Two push buttons
-- Portable power source
-
-The two buttons command upward and downward movement of the actuator.
-
-The remote ESP32 reads the button states and sends the selected movement command wirelessly to the actuator controller.
-
-### Actuator Controller
-
-The main unit contains:
-
-- ESP32 development board
-- L298N motor driver
-- 12 V DC gearmotor
-- Battery supply
-- Custom linear actuator
-
-The actuator ESP32 receives the command and determines the required motor direction.
-
-The L298N motor driver supplies the motor with the current required to move the actuator, while the ESP32 provides the direction and control signals.
+```text
+Push buttons
+    ↓
+Remote ESP32
+    ↓ ESP-NOW
+Actuator ESP32
+    ↓
+L298N motor driver
+    ↓
+12 V DC gearmotor
+    ↓
+Linear actuator movement
+```
 
 ---
 
 ## Electronics and Wiring
 
 <p align="center">
-  <img src="images/integrated-electronics.jpg" alt="Integrated QuAC electronics" width="600">
+  <img src="images/electronics-prototype.jpg" alt="QuAC electronics prototype" width="600">
   <br>
-  <em>Electronics integrated into the QuAC prototype.</em>
+  <em>Assembled electronics used for wireless communication and actuator control.</em>
 </p>
 
 | Component | Function |
 |---|---|
-| ESP32 remote controller | Reads button inputs and transmits commands through ESP-NOW |
-| ESP32 actuator controller | Receives commands and controls the motor driver |
+| ESP32, remote unit | Reads button inputs and transmits commands through ESP-NOW |
+| ESP32, actuator unit | Receives commands and controls the motor driver |
 | Two push buttons | Command upward and downward actuator movement |
-| L298N motor driver | Provides bidirectional control of the DC motor |
+| L298N dual H-bridge | Provides bidirectional control of the DC motor |
 | 12 V DC gearmotor | Drives the leadscrew-based actuator |
-| Battery pack | Supplies the motor and motor driver |
-| Power bank | Supplies the ESP32 control electronics |
-| Custom linear actuator | Converts motor rotation into linear motion |
+| Battery pack | Powers the motor and motor driver |
+| Power bank | Powers the ESP32 control electronics |
+
+### Remote Controller
 
 <p align="center">
-  <img src="documentation/wiring-diagram.png" alt="QuAC wiring diagram" width="750">
+  <img src="documentation/remote-wiring-diagram.png" alt="Remote-controller wiring diagram" width="700">
   <br>
-  <em>Simplified wiring diagram for the remote controller and actuator-controller electronics.</em>
+  <em>Wiring diagram for the handheld ESP32 remote controller.</em>
 </p>
 
-The remote controller and main unit are electrically separate.
-
-The remote ESP32 reads the buttons and transmits a movement command. The actuator ESP32 receives the command and controls the L298N input pins.
-
-The motor driver changes the direction of the DC motor according to the received command:
+The remote ESP32 reads the two button inputs and converts them into one of three movement commands:
 
 ```text
-Forward command  -> actuator moves downward
-Reverse command  -> actuator moves upward
-No command       -> motor stops
+UP
+DOWN
+STOP
 ```
 
-The report documents that the mechatronics subgroup developed the system incrementally, first testing simple button and LED control, then motor control, and finally wireless communication between the two ESP32 boards. PRODUKTUTVIKLING.pdf
+The selected command is transmitted wirelessly to the actuator controller using ESP-NOW.
+
+### Actuator Controller
+
+<p align="center">
+  <img src="documentation/actuator-wiring-diagram.png" alt="Actuator-controller wiring diagram" width="700">
+  <br>
+  <em>Wiring diagram for the ESP32, L298N motor driver, and DC motor.</em>
+</p>
+
+The actuator ESP32 receives the movement command and sets the L298N direction inputs accordingly.
+
+| Command | IN1 | IN2 | Result |
+|---|---:|---:|---|
+| Move down | HIGH | LOW | Motor rotates forward |
+| Move up | LOW | HIGH | Motor rotates in reverse |
+| Stop | LOW | LOW | Motor stops |
+
+The physical direction depends on the motor wiring and can be reversed in software if required.
 
 ---
 
@@ -128,117 +116,74 @@ The report documents that the mechatronics subgroup developed the system increme
 
 The two ESP32 boards communicate using **ESP-NOW**, a direct wireless communication protocol supported by the ESP32.
 
-The development process began by sending test values between the two boards. Once communication was confirmed, the transmitted data was connected to the remote-controller buttons and the actuator motor-control logic.
+ESP-NOW was suitable for the prototype because it allows short commands to be sent directly between two known devices without requiring a router or external Wi-Fi network.
 
-The communication flow is:
+The communication system was developed incrementally:
 
-```text
-Button input
-     |
-     v
-Remote ESP32
-     |
-     | ESP-NOW
-     v
-Actuator ESP32
-     |
-     v
-L298N motor driver
-     |
-     v
-12 V DC motor
-     |
-     v
-Linear actuator movement
-```
+1. Test values were transmitted between the ESP32 boards.
+2. The received values were verified through serial output.
+3. The remote buttons were connected to the transmitted data.
+4. The received commands were connected to the motor-control logic.
+5. The complete wireless system was tested with the actuator.
 
-ESP-NOW was selected because it allows direct communication between ESP32 boards without requiring a separate Wi-Fi network or external controller.
+The report documents that the mechatronics subgroup developed the system from basic button and LED tests to wireless motor control using two ESP32 units. PRODUKTUTVIKLING.pdf
 
 ---
 
-## Control Flow
+## Software and Control Flow
 
-<p align="center">
-  <img src="documentation/activity-diagram.png" alt="QuAC software activity diagram" width="750">
-  <br>
-  <em>Activity diagram showing remote input, wireless transmission, command reception, and motor actuation.</em>
-</p>
+The repository contains two separate firmware programs because the ESP32 boards perform different roles.
 
 ### Remote-Controller Logic
 
-During each loop, the remote controller:
+<p align="center">
+  <img src="documentation/remote-activity-diagram.png" alt="Remote-controller activity diagram" width="700">
+  <br>
+  <em>Remote-controller logic for reading button inputs and transmitting movement commands.</em>
+</p>
 
-1. Reads the upward and downward button inputs.
-2. Determines whether a valid command is active.
-3. Sends the command to the actuator ESP32 using ESP-NOW.
-4. Sends a stop command when neither button is pressed.
-5. Repeats the loop.
+The remote-controller firmware:
+
+- Initialises ESP-NOW
+- Registers the actuator ESP32 as a communication peer
+- Reads the upward and downward buttons
+- Encodes the selected movement command
+- Transmits the command
+- Sends a stop command when no button is pressed
 
 ### Actuator-Controller Logic
 
-During each loop, the actuator controller:
+<p align="center">
+  <img src="documentation/actuator-activity-diagram.png" alt="Actuator-controller activity diagram" width="700">
+  <br>
+  <em>Actuator-controller logic for receiving commands and controlling motor direction.</em>
+</p>
 
-1. Checks for a newly received ESP-NOW message.
-2. Reads the movement command.
-3. Sets the motor-driver direction pins.
-4. Activates the motor in the required direction.
-5. Stops the motor when no valid movement command is present.
-6. Repeats the loop.
+The actuator-controller firmware:
+
+- Initialises ESP-NOW as a receiver
+- Receives movement commands
+- Decodes the received command
+- Sets the L298N direction inputs
+- Drives the motor upward or downward
+- Stops the motor when no movement command is active
 
 ---
 
 ## Motor and Actuator Control
 
-The system uses a 12 V DC gearmotor because continuous rotation was required to drive the leadscrew mechanism.
+The actuator is driven by a 12 V DC gearmotor.
 
-The motor drives a pair of gears connected to the leadscrew. Rotation of the leadscrew moves a nut along the screw, producing linear movement of the compression arm.
+The motor rotates a leadscrew through a gear transmission. Rotation of the leadscrew moves a nut along the screw, converting rotational motion into linear movement of the compression arm.
 
-The mechanical design used the leadscrew because it provided:
+The leadscrew mechanism was selected because it provides:
 
 - High mechanical advantage
 - Controlled linear movement
 - Resistance to back-driving
 - The ability to maintain pressure when the motor is not actively rotating
 
-The L298N motor driver allows the ESP32 to reverse the motor direction by changing the logic level of the driver input pins.
-
-A simplified control table is shown below:
-
-| Command | Motor input 1 | Motor input 2 | Result |
-|---|---:|---:|---|
-| Move down | HIGH | LOW | Motor rotates forward |
-| Move up | LOW | HIGH | Motor rotates in reverse |
-| Stop | LOW | LOW | Motor stops |
-
-The exact direction depends on the physical motor wiring and can be reversed in software if required.
-
----
-
-## Software Structure
-
-The repository contains two separate firmware programs.
-
-### Remote Controller
-
-The remote-controller firmware is responsible for:
-
-- Configuring the ESP-NOW connection
-- Reading the two push buttons
-- Encoding the movement command
-- Transmitting the command to the actuator controller
-- Sending a stop command when no button is pressed
-
-### Actuator Controller
-
-The actuator-controller firmware is responsible for:
-
-- Configuring the ESP-NOW receiver
-- Receiving movement commands
-- Setting the L298N direction pins
-- Driving the motor upward or downward
-- Stopping the motor when required
-
-The software is intentionally separated because the two ESP32 boards perform different roles.
+The GitHub repository focuses only on the electronic and software control of this mechanism. The detailed mechanical design and manufacturing process are presented in the portfolio case study.
 
 ---
 
@@ -247,28 +192,25 @@ The software is intentionally separated because the two ESP32 boards perform dif
 ```text
 quac-esp32-control/
 ├── documentation/
-│   ├── activity-diagram.png
-│   ├── system-architecture.png
-│   └── wiring-diagram.png
+│   ├── actuator-activity-diagram.png
+│   ├── actuator-wiring-diagram.png
+│   ├── remote-activity-diagram.png
+│   └── remote-wiring-diagram.png
 ├── images/
 │   ├── electronics-prototype.jpg
-│   ├── final-prototype.jpg
-│   ├── integrated-electronics.jpg
-│   └── remote-controller.jpg
+│   └── final-prototype.jpg
 ├── software/
 │   ├── actuator-controller/
 │   │   └── actuator-controller.ino
 │   └── remote-controller/
 │       └── remote-controller.ino
-├── README.md
-└── LICENSE
+└── README.md
 ```
 
-- `documentation/` contains the wiring, architecture, and activity diagrams.
-- `images/` contains photographs of the electronics and final prototype.
-- `software/remote-controller/` contains the firmware for the wireless remote.
+- `documentation/` contains the activity and wiring diagrams for both ESP32 units.
+- `images/` contains photographs of the electronics and completed prototype.
+- `software/remote-controller/` contains the firmware for the handheld remote.
 - `software/actuator-controller/` contains the firmware for the motor-control unit.
-- `README.md` documents the embedded system.
 
 ---
 
@@ -276,23 +218,16 @@ quac-esp32-control/
 
 The project requires:
 
-- Two compatible ESP32 development boards
+- Two ESP32 development boards
 - Arduino IDE or another compatible ESP32 development environment
 - ESP32 Arduino board package
 - ESP-NOW support included with the ESP32 framework
 
-### 1. Prepare the ESP32 Boards
+### 1. Configure the Receiver Address
 
-Identify which ESP32 will be used as:
+The remote controller must contain the MAC address of the actuator ESP32.
 
-- Remote controller
-- Actuator controller
-
-### 2. Configure the Receiver Address
-
-The remote controller must be configured with the MAC address of the actuator ESP32.
-
-Replace the placeholder address in the remote-controller firmware:
+Replace the placeholder in the remote-controller firmware:
 
 ```cpp
 uint8_t receiverAddress[] = {
@@ -300,7 +235,7 @@ uint8_t receiverAddress[] = {
 };
 ```
 
-### 3. Upload the Actuator Firmware
+### 2. Upload the Actuator Firmware
 
 Open:
 
@@ -310,7 +245,7 @@ software/actuator-controller/actuator-controller.ino
 
 Select the correct ESP32 board and serial port, then compile and upload the firmware.
 
-### 4. Upload the Remote Firmware
+### 3. Upload the Remote Firmware
 
 Open:
 
@@ -320,102 +255,78 @@ software/remote-controller/remote-controller.ino
 
 Select the second ESP32 board and serial port, then compile and upload the firmware.
 
-### 5. Test the Electronics Safely
+### 4. Test the Electronics
 
-Before connecting the actuator to a loaded mechanism:
+Before connecting the motor to a loaded mechanism:
 
-1. Disconnect the motor from the mechanical load or ensure the actuator can move freely.
-2. Confirm that the motor remains stopped when no button is pressed.
-3. Test the upward command.
-4. Test the downward command.
-5. Confirm that the direction matches the intended actuator movement.
-6. Confirm that the motor stops when the button is released.
-7. Test communication loss and reset behaviour.
+1. Confirm that the motor remains stopped when neither button is pressed.
+2. Test the upward command.
+3. Test the downward command.
+4. Confirm that the motor direction matches the intended actuator movement.
+5. Confirm that the motor stops when the button is released.
+6. Test the system with the actuator unloaded before applying mechanical load.
 
 ---
 
 ## Testing
 
-<p align="center">
-  <img src="images/electronics-prototype.jpg" alt="QuAC electronics prototype" width="550">
-  <br>
-  <em>Prototype electronics used during ESP-NOW and motor-control testing.</em>
-</p>
-
-The mechatronics system was developed and tested incrementally.
+The electronics were developed and tested incrementally before integration into the completed prototype.
 
 Testing included:
 
-- Button input
+- Push-button input
 - ESP-NOW communication
 - Transmission of test values
 - Motor direction
 - Motor-driver response
-- Remote operation
-- Electronics integration
-- Full-system testing with the actuator
+- Wireless remote operation
+- Integration with the linear actuator
+- Full-system testing under mechanical load
 
-The motor driver produced significant heat during testing. The module was therefore mounted with 3D-printed spacers to improve airflow and reduce direct contact with the baseplate.
+The L298N motor driver produced significant heat during testing. It was therefore mounted on 3D-printed standoffs to improve airflow and reduce direct contact with the baseplate.
 
-The original concept also included potentiometer-based speed adjustment. This function was removed after the potentiometer failed late in the project and was not required for the prototype's core operation.
+A potentiometer was originally included for variable speed control. It was removed after failing late in the development process and was not required for the prototype's basic operation.
 
-A force sensor and LCD display were considered but not implemented because of time, packaging, and integration constraints. PRODUKTUTVIKLING.pdf
+A force sensor was also considered but not implemented because of sensor capacity, packaging, wiring, and integration constraints within the project timeframe. PRODUKTUTVIKLING.pdf
 
----
-
-## Results
-
-The wireless control system successfully transmitted movement commands from the remote controller to the actuator controller.
-
-The final system provided:
-
-- Wireless upward and downward actuator control
-- Bidirectional motor operation
-- Remote control outside the patient's reach
-- Integration of electronics with the custom linear actuator
-- Operation of the completed prototype during testing
-
-The complete mechanism reached a measured compression force of **45.8 kg**, compared with the prototype target of 40 kg. PRODUKTUTVIKLING.pdf
-
-This result demonstrates the mechanical and electrical capability of the educational prototype only. It does not establish clinical safety, medical effectiveness, or regulatory compliance.
+During full-system testing, the complete prototype produced a measured compression force of **45.8 kg**, exceeding the engineering target of 40 kg. This was a prototype load test and not a clinical validation. PRODUKTUTVIKLING.pdf
 
 ---
 
 ## Known Limitations and Next Steps
 
-- The prototype does not include a dedicated emergency-stop mechanism.
-- No limit switches are implemented to prevent excessive actuator travel.
-- The motor driver developed significant heat during operation.
-- The system uses separate power sources for the ESP32 electronics and motor supply.
-- The original speed-control potentiometer was removed from the final prototype.
-- No force sensor is included for closed-loop pressure control.
-- The prototype has not been clinically validated and is not suitable for medical use.
+- No dedicated fail-safe automatically stops the motor if ESP-NOW communication is lost.
+- No limit switches prevent excessive actuator travel.
+- The L298N motor driver produces significant heat during sustained operation.
+- The ESP32 electronics and motor use separate power sources.
+- The system uses open-loop direction control without force feedback.
+- The prototype does not include a dedicated hardware emergency stop.
 
-Natural next steps would include:
+Natural next steps include:
 
 - Adding upper and lower limit switches
-- Adding a hardware emergency stop
 - Implementing communication-loss fail-safe behaviour
+- Adding a hardware emergency stop
 - Replacing the L298N with a more efficient motor driver
-- Using a regulated power system for both control electronics and motor supply
+- Using a regulated power system for the motor and control electronics
 - Adding calibrated force sensing
 - Implementing closed-loop force control
-- Separating communication, motor control, and safety logic into modular source files
 
 ---
 
 ## Contributions
 
-The complete QuAC prototype was developed by a twelve-person Mechanical Engineering student team at NTNU.
+The complete QuAC prototype was developed by a thirteen-person Mechanical Engineering student team at NTNU.
 
-The mechatronics subgroup consisted of **Mohamed Elwalid Fadul** and **Hardik Deshpande**. The subgroup was responsible for the electronic components, programming, and integration of the mechatronic system into the physical prototype. PRODUKTUTVIKLING.pdf
+The mechatronics sub-team consisted of **Mohamed Elwalid Fadul** and **Hardik Deshpande**. The sub-team was responsible for the electronic components, firmware, testing, and integration of the mechatronic system into the physical prototype. PRODUKTUTVIKLING.pdf
 
 My main contributions included:
 
 - ESP32 implementation
 - ESP-NOW communication
-- Remote-controller development
+- Remote-controller firmware
 - Motor-control logic
-- Electronics wiring and testing
-- Integration with the custom linear actuator
-- Full-system testing and troubleshooting
+- Electronics wiring
+- Component testing
+- Integration with the linear actuator
+- Full-system troubleshooting
