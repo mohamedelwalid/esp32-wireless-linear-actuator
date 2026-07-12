@@ -1,41 +1,43 @@
-# QuAC ESP32 Control System
+# ESP32 Wireless Linear Actuator Control
 
-Embedded control software and electronics for **QuAC (Quick Aorta Compressor)**, a motorised external-compression prototype developed as part of **TMM4121 – Product Development** at NTNU.
+Embedded software and electronics for the wireless control of a custom, DC motor-driven linear actuator developed as part of **TMM4121 – Product Development** at NTNU.
 
-> **Educational prototype:** QuAC was developed as a student product-development project. It is not a certified medical device and is not intended for clinical use.
+The system uses two ESP32 development boards communicating through **ESP-NOW**. A handheld remote reads two push buttons and transmits movement commands to a second ESP32, which controls a 12 V DC gearmotor through an L298N motor driver.
 
-QuAC was developed by a thirteen-person Mechanical Engineering student team. My responsibilities were within **mechatronics and programming**, shared with one other team member, and included ESP32 implementation, ESP-NOW communication, motor-control logic, electronics integration, testing, and troubleshooting.
+> **Educational prototype:** This repository documents a student engineering prototype. The complete system is not a certified medical device and is not intended for clinical use.
 
-This repository documents the **software and electronics** portion of the project. The mechanical design, CAD development, manufacturing, structural analysis, and complete product-development process are presented separately in the project case study on my portfolio website.
+My responsibilities were within **mechatronics and programming**, shared with one other team member, and included ESP32 implementation, wireless communication, motor-control logic, electronics integration, testing, and troubleshooting.
+
+This repository covers only the **embedded software, electronics, communication, and actuator-control system**. The wider product context, mechanical design, CAD, manufacturing, structural analysis, and product-development process are documented separately in the project case study on my portfolio website.
 
 <p align="center">
-  <img src="images/final-prototype.jpg" alt="Final QuAC prototype" width="650">
+  <img src="images/final-prototype.jpg" alt="Wireless linear actuator control system integrated into the final prototype" width="650">
   <br>
-  <em>Final QuAC prototype.</em>
+  <em>Wireless linear actuator control system integrated into the final prototype.</em>
 </p>
 
 ---
 
 ## Overview
 
-QuAC uses a motor-driven linear actuator to move a compression arm. The mechanism is controlled through a wireless handheld remote, allowing the operator to control the actuator without a wired connection to the main unit.
+The system provides wireless, bidirectional control of a custom linear actuator.
 
-The embedded system uses two ESP32 development boards:
+Two ESP32 boards perform separate roles:
 
-- **Remote controller** — reads two push buttons and transmits movement commands.
-- **Actuator controller** — receives movement commands and controls a 12 V DC gearmotor through an L298N motor driver.
+- **Remote controller** — reads the operator's button inputs and transmits movement commands.
+- **Actuator controller** — receives the commands and controls a 12 V DC gearmotor through an L298N H-bridge.
 
-The two ESP32 boards communicate directly using **ESP-NOW**.
+The motor rotates a leadscrew through a gear transmission, converting rotational motion into linear movement.
 
 ### Key Features
 
-- Wireless communication between two ESP32 boards
-- Direct ESP-NOW command transmission
-- Separate remote-controller and actuator-controller firmware
+- Direct wireless communication using ESP-NOW
+- Separate transmitter and receiver firmware
 - Bidirectional DC motor control
-- Upward, downward, and stop commands
+- Up, down, and stop commands
 - Battery-powered remote and actuator units
-- Electronics integrated into the completed prototype
+- Integration with a custom leadscrew actuator
+- Incremental hardware and software testing
 - Full-system testing under mechanical load
 
 ### Control Flow
@@ -59,7 +61,7 @@ Linear actuator movement
 ## Electronics
 
 <p align="center">
-  <img src="images/electronics-prototype.jpg" alt="QuAC electronics prototype" width="650">
+  <img src="images/electronics-prototype.jpg" alt="Assembled ESP32 and motor-control electronics" width="650">
   <br>
   <em>Assembled electronics used for wireless communication and actuator control.</em>
 </p>
@@ -80,7 +82,7 @@ Linear actuator movement
 
 The handheld remote contains an ESP32, two push buttons, and a portable power source.
 
-The ESP32 reads the button states and sends one of three commands:
+The firmware reads the button states and sends one of three commands:
 
 ```text
 UP
@@ -89,7 +91,7 @@ STOP
 ```
 
 <p align="center">
-  <img src="documentation/remote-wiring-diagram.png" alt="Remote-controller wiring diagram" width="750">
+  <img src="documentation/remote-wiring-diagram.svg" alt="Remote-controller wiring diagram" width="750">
   <br>
   <em>Wiring diagram for the ESP32 remote controller.</em>
 </p>
@@ -118,7 +120,7 @@ The actuator unit contains an ESP32, an L298N motor driver, a 12 V DC gearmotor,
 The actuator ESP32 receives the wireless command and sets the motor-driver inputs accordingly.
 
 <p align="center">
-  <img src="documentation/actuator-wiring-diagram.png" alt="Actuator-controller wiring diagram" width="750">
+  <img src="documentation/actuator-wiring-diagram.svg" alt="Actuator-controller wiring diagram" width="750">
   <br>
   <em>Wiring diagram for the ESP32 actuator controller, L298N, and DC motor.</em>
 </p>
@@ -129,7 +131,7 @@ The actuator ESP32 receives the wireless command and sets the motor-driver input
 | Move up | LOW | HIGH | Motor rotates in reverse |
 | Stop | LOW | LOW | Motor stops |
 
-The physical movement direction depends on the motor wiring and can be reversed in software if required.
+The physical direction depends on the motor wiring and can be reversed in software if required.
 
 The actuator-controller firmware is responsible for:
 
@@ -150,9 +152,9 @@ The actuator-controller firmware is responsible for:
 
 ## Wireless Communication
 
-The two ESP32 boards communicate using **ESP-NOW**, a direct wireless communication protocol supported by the ESP32.
+The two ESP32 boards communicate using **ESP-NOW**, a direct wireless protocol supported by the ESP32.
 
-ESP-NOW was selected because it allows short commands to be transmitted directly between two known devices without requiring a router or external Wi-Fi network.
+ESP-NOW was selected because it allows short commands to be exchanged directly between two known devices without requiring a router or external Wi-Fi network.
 
 The communication system was developed incrementally:
 
@@ -182,7 +184,7 @@ Actuator movement
 
 The actuator is driven by a 12 V DC gearmotor.
 
-The motor rotates a leadscrew through a gear transmission. Rotation of the leadscrew moves a nut along the screw, converting rotational motion into linear movement of the compression arm.
+The motor rotates a leadscrew through a gear transmission. Rotation of the leadscrew moves a nut along the screw, converting motor rotation into linear movement.
 
 The L298N motor driver allows the actuator ESP32 to:
 
@@ -190,7 +192,7 @@ The L298N motor driver allows the actuator ESP32 to:
 - Drive the motor in reverse
 - Stop the motor
 
-The GitHub repository focuses on the electronic and software control of the mechanism. Detailed mechanical design and manufacturing are documented in the portfolio case study.
+This repository focuses on the electronic and software control of the mechanism. Detailed mechanical design and manufacturing are documented in the portfolio case study.
 
 ---
 
@@ -229,7 +231,7 @@ Responsibilities:
 ## Repository Structure
 
 ```text
-quac-esp32-control/
+esp32-wireless-linear-actuator/
 ├── documentation/
 │   ├── actuator-activity-diagram.svg
 │   ├── actuator-wiring-diagram.svg
@@ -264,9 +266,7 @@ quac-esp32-control/
 
 ### 1. Configure the Receiver Address
 
-The remote controller must contain the MAC address of the actuator ESP32.
-
-Replace the placeholder address in the remote-controller firmware:
+The remote-controller firmware must contain the MAC address of the actuator ESP32.
 
 ```cpp
 uint8_t receiverAddress[] = {
@@ -359,7 +359,7 @@ During full-system testing, the complete prototype produced a measured compressi
 
 ## Contributions
 
-The complete QuAC prototype was developed by a thirteen-person Mechanical Engineering student team at NTNU.
+The complete prototype was developed by a thirteen-person Mechanical Engineering student team at NTNU.
 
 The mechatronics sub-team consisted of **Mohamed Elwalid Fadul** and **Hardik Deshpande**. The sub-team was responsible for the electronic components, firmware, testing, and integration of the mechatronic system into the physical prototype.
 
