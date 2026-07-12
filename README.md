@@ -61,7 +61,7 @@ Linear actuator movement
 ## Electronics
 
 <p align="center">
-  <img src="images/electronics-prototype.jpg" alt="Assembled ESP32 and motor-control electronics" width="650">
+  <img src="images/electronics-prototype.jpg" alt="Assembled ESP32 and motor-control electronics" width="600">
   <br>
   <em>Assembled electronics used for wireless communication and actuator control.</em>
 </p>
@@ -91,7 +91,7 @@ STOP
 ```
 
 <p align="center">
-  <img src="documentation/remote-wiring-diagram.svg" alt="Remote-controller wiring diagram" width="750">
+  <img src="documentation/remote-wiring-diagram.png" alt="Remote-controller wiring diagram" width="520">
   <br>
   <em>Wiring diagram for the ESP32 remote controller.</em>
 </p>
@@ -106,7 +106,7 @@ The remote-controller firmware is responsible for:
 - Sending a stop command when neither button is pressed
 
 <p align="center">
-  <img src="documentation/remote-activity-diagram.svg" alt="Remote-controller activity diagram" width="700">
+  <img src="documentation/remote-activity-diagram.svg" alt="Remote-controller activity diagram" width="500">
   <br>
   <em>Remote-controller logic for reading user input and transmitting commands.</em>
 </p>
@@ -120,7 +120,7 @@ The actuator unit contains an ESP32, an L298N motor driver, a 12 V DC gearmotor,
 The actuator ESP32 receives the wireless command and sets the motor-driver inputs accordingly.
 
 <p align="center">
-  <img src="documentation/actuator-wiring-diagram.svg" alt="Actuator-controller wiring diagram" width="750">
+  <img src="documentation/actuator-wiring-diagram.png" alt="Actuator-controller wiring diagram" width="760">
   <br>
   <em>Wiring diagram for the ESP32 actuator controller, L298N, and DC motor.</em>
 </p>
@@ -143,7 +143,7 @@ The actuator-controller firmware is responsible for:
 - Stopping the motor when no movement command is active
 
 <p align="center">
-  <img src="documentation/actuator-activity-diagram.svg" alt="Actuator-controller activity diagram" width="700">
+  <img src="documentation/actuator-activity-diagram.svg" alt="Actuator-controller activity diagram" width="720">
   <br>
   <em>Actuator-controller logic for receiving commands and controlling motor direction.</em>
 </p>
