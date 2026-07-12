@@ -2,13 +2,13 @@
 
 Embedded software and electronics for the wireless control of a custom, DC motor-driven linear actuator developed as part of **TMM4121 – Product Development** at NTNU.
 
-The system uses two ESP32 development boards communicating through **ESP-NOW**. A handheld remote reads two push buttons and transmits movement commands to a second ESP32, which controls a 12 V DC gearmotor through an L298N motor driver.
+The system uses two ESP32 development boards communicating through **ESP-NOW**. A handheld controller reads two push buttons and a potentiometer, then transmits the input data to a second ESP32 that controls a 12 V DC gearmotor through an L298N motor driver.
 
 > **Educational prototype:** This repository documents a student engineering prototype. The complete system is not a certified medical device and is not intended for clinical use.
 
-My responsibilities were within **mechatronics and programming**, shared with one other team member, and included ESP32 implementation, wireless communication, motor-control logic, electronics integration, testing, and troubleshooting.
+My responsibilities were within **mechatronics and programming**, shared with one other team member, and included ESP32 implementation, ESP-NOW communication, motor-control logic, electronics integration, testing, and troubleshooting.
 
-This repository covers only the **embedded software, electronics, communication, and actuator-control system**. The wider product context, mechanical design, CAD, manufacturing, structural analysis, and product-development process are documented separately in the project case study on my portfolio website.
+This repository covers only the **embedded software, electronics, wireless communication, and actuator-control system**. The wider product context, mechanical design, CAD, manufacturing, structural analysis, and product-development process are documented separately in the project case study on my portfolio website.
 
 <p align="center">
   <img src="images/final-prototype.jpg" alt="Wireless linear actuator control system integrated into the final prototype" width="650">
@@ -20,132 +20,167 @@ This repository covers only the **embedded software, electronics, communication,
 
 ## Overview
 
-The system provides wireless, bidirectional control of a custom linear actuator.
+The system provides wireless, bidirectional control of a custom leadscrew-based linear actuator.
 
 Two ESP32 boards perform separate roles:
 
-- **Remote controller** — reads the operator's button inputs and transmits movement commands.
-- **Actuator controller** — receives the commands and controls a 12 V DC gearmotor through an L298N H-bridge.
+- **Remote controller** — reads the operator inputs and transmits control data.
+- **Actuator controller** — receives the data and controls the DC motor through an L298N H-bridge.
 
-The motor rotates a leadscrew through a gear transmission, converting rotational motion into linear movement.
+```text
+Buttons and potentiometer
+            ↓
+       Remote ESP32
+            ↓
+         ESP-NOW
+            ↓
+      Actuator ESP32
+            ↓
+    L298N motor driver
+            ↓
+     12 V DC gearmotor
+            ↓
+   Linear actuator movement
+```
 
 ### Key Features
 
 - Direct wireless communication using ESP-NOW
 - Separate transmitter and receiver firmware
 - Bidirectional DC motor control
-- Up, down, and stop commands
+- Upward, downward, and stop states
+- Potentiometer input for motor-speed control
 - Battery-powered remote and actuator units
-- Integration with a custom leadscrew actuator
-- Incremental hardware and software testing
+- Integration with a custom linear actuator
 - Full-system testing under mechanical load
-
-### Control Flow
-
-```text
-Push buttons
-    ↓
-Remote ESP32
-    ↓  ESP-NOW
-Actuator ESP32
-    ↓
-L298N motor driver
-    ↓
-12 V DC gearmotor
-    ↓
-Linear actuator movement
-```
 
 ---
 
-## Electronics
+## Hardware and Wiring
 
 <p align="center">
-  <img src="images/electronics-prototype.jpg" alt="Assembled ESP32 and motor-control electronics" width="600">
+  <img src="images/electronics-prototype.jpg" alt="ESP32 and motor-control electronics during prototyping" width="600">
   <br>
-  <em>Assembled electronics used for wireless communication and actuator control.</em>
+  <em>Electronics prototype used during communication and motor-control development.</em>
 </p>
 
 | Component | Function |
 |---|---|
-| ESP32, remote unit | Reads button inputs and transmits commands using ESP-NOW |
-| ESP32, actuator unit | Receives commands and controls the motor driver |
+| ESP32, remote unit | Reads the buttons and potentiometer and transmits data |
+| ESP32, actuator unit | Receives data and controls the motor driver |
 | Two push buttons | Command upward and downward actuator movement |
+| Potentiometer | Provides an analogue motor-speed input |
 | L298N dual H-bridge | Provides bidirectional DC motor control |
 | 12 V DC gearmotor | Drives the leadscrew-based linear actuator |
 | Battery pack | Powers the motor and motor driver |
 | Power bank | Powers the ESP32 control electronics |
 
----
+### ESP32 Pin Configuration
 
-## Remote Controller
+#### Remote Controller
 
-The handheld remote contains an ESP32, two push buttons, and a portable power source.
+| Function | GPIO | Configuration |
+|---|---:|---|
+| Potentiometer input | 18 | Analogue input |
+| Down button | 16 | `INPUT_PULLUP` |
+| Up button | 17 | `INPUT_PULLUP` |
 
-The firmware reads the button states and sends one of three commands:
+The buttons use the ESP32's internal pull-up resistors and are therefore **active-low**:
 
 ```text
-UP
-DOWN
-STOP
+LOW  = button pressed
+HIGH = button released
 ```
 
+#### Actuator Controller
+
+| Function | GPIO | Connection |
+|---|---:|---|
+| Motor enable / speed | 25 | L298N ENA |
+| Motor direction input 1 | 32 | L298N IN1 |
+| Motor direction input 2 | 33 | L298N IN2 |
+
+### Remote-Controller Wiring
+
 <p align="center">
-  <img src="documentation/remote-wiring-diagram.png" alt="Remote-controller wiring diagram" width="520">
+  <img src="documentation/remote-wiring-diagram.svg" alt="Remote-controller wiring diagram" width="520">
   <br>
   <em>Wiring diagram for the ESP32 remote controller.</em>
 </p>
 
-The remote-controller firmware is responsible for:
-
-- Initialising ESP-NOW
-- Registering the actuator ESP32 as a communication peer
-- Reading the upward and downward buttons
-- Encoding the selected command
-- Transmitting the command
-- Sending a stop command when neither button is pressed
+### Actuator-Controller Wiring
 
 <p align="center">
-  <img src="documentation/remote-activity-diagram.svg" alt="Remote-controller activity diagram" width="500">
-  <br>
-  <em>Remote-controller logic for reading user input and transmitting commands.</em>
-</p>
-
----
-
-## Actuator Controller
-
-The actuator unit contains an ESP32, an L298N motor driver, a 12 V DC gearmotor, and a battery supply.
-
-The actuator ESP32 receives the wireless command and sets the motor-driver inputs accordingly.
-
-<p align="center">
-  <img src="documentation/actuator-wiring-diagram.png" alt="Actuator-controller wiring diagram" width="760">
+  <img src="documentation/actuator-wiring-diagram.svg" alt="Actuator-controller wiring diagram" width="760">
   <br>
   <em>Wiring diagram for the ESP32 actuator controller, L298N, and DC motor.</em>
 </p>
 
-| Command | IN1 | IN2 | Result |
+---
+
+## Firmware
+
+The repository contains one firmware program for each ESP32.
+
+### Remote Controller
+
+```text
+software/remote-controller/remote-controller.ino
+```
+
+The remote-controller firmware:
+
+- Initialises ESP-NOW
+- Registers the actuator ESP32 as a peer
+- Reads the up and down buttons
+- Reads the potentiometer input
+- Stores the values in a shared message structure
+- Transmits the message every 500 ms
+- Reports the transmission status through the serial monitor
+
+The transmitted data structure contains:
+
+```cpp
+typedef struct struct_message {
+    int speedval;
+    int downState;
+    int upState;
+} struct_message;
+```
+
+<p align="center">
+  <img src="documentation/remote-activity-diagram.svg" alt="Remote-controller activity diagram" width="500">
+  <br>
+  <em>Remote-controller logic for reading user input and transmitting control data.</em>
+</p>
+
+### Actuator Controller
+
+```text
+software/actuator-controller/actuator-controller.ino
+```
+
+The actuator-controller firmware:
+
+- Initialises ESP-NOW as a receiver
+- Receives the shared message structure
+- Extracts speed and button states
+- Sets the L298N direction inputs
+- Applies the received speed value to the enable pin
+- Stops the motor when neither movement button is pressed
+
+The current motor logic is:
+
+| Input state | IN1 | IN2 | Result |
 |---|---:|---:|---|
-| Move down | HIGH | LOW | Motor rotates forward |
-| Move up | LOW | HIGH | Motor rotates in reverse |
-| Stop | LOW | LOW | Motor stops |
-
-The physical direction depends on the motor wiring and can be reversed in software if required.
-
-The actuator-controller firmware is responsible for:
-
-- Initialising ESP-NOW as a receiver
-- Receiving movement commands
-- Decoding the received command
-- Setting the L298N direction inputs
-- Driving the motor upward or downward
-- Stopping the motor when no movement command is active
+| Down button pressed | HIGH | LOW | Motor rotates forward |
+| Up button pressed | LOW | HIGH | Motor rotates in reverse |
+| Both buttons released | LOW | LOW | Motor stops |
 
 <p align="center">
   <img src="documentation/actuator-activity-diagram.svg" alt="Actuator-controller activity diagram" width="720">
   <br>
-  <em>Actuator-controller logic for receiving commands and controlling motor direction.</em>
+  <em>Actuator-controller logic for receiving data and controlling motor direction.</em>
 </p>
 
 ---
@@ -154,77 +189,60 @@ The actuator-controller firmware is responsible for:
 
 The two ESP32 boards communicate using **ESP-NOW**, a direct wireless protocol supported by the ESP32.
 
-ESP-NOW was selected because it allows short commands to be exchanged directly between two known devices without requiring a router or external Wi-Fi network.
+ESP-NOW was selected because it allows short control messages to be transmitted directly between two known devices without requiring a router or external Wi-Fi network.
 
-The communication system was developed incrementally:
-
-1. Test values were transmitted between the two ESP32 boards.
-2. Received values were verified through serial output.
-3. Button inputs were connected to the transmitted data.
-4. Received commands were connected to the motor-control logic.
-5. The complete wireless system was tested with the actuator.
+The sender transmits three values:
 
 ```text
-Remote input
-    ↓
-Command encoded
-    ↓
-ESP-NOW transmission
-    ↓
-Command received
-    ↓
-Motor direction selected
-    ↓
-Actuator movement
+Motor-speed value
+Down-button state
+Up-button state
+```
+
+The actuator controller receives the same message structure and uses the values directly in the motor-control logic.
+
+The receiver ESP32 is identified by its MAC address in the remote-controller firmware:
+
+```cpp
+uint8_t broadcastAddress[] = {
+    0x4C, 0x11, 0xAE, 0xB3, 0xA0, 0x20
+};
 ```
 
 ---
 
-## Motor Control
+## Testing and Results
 
-The actuator is driven by a 12 V DC gearmotor.
+The electronics were developed incrementally before being integrated into the complete prototype.
 
-The motor rotates a leadscrew through a gear transmission. Rotation of the leadscrew moves a nut along the screw, converting motor rotation into linear movement.
+Testing covered:
 
-The L298N motor driver allows the actuator ESP32 to:
+- Digital button inputs
+- Analogue potentiometer input
+- ESP-NOW message transmission
+- Sender and receiver pairing
+- Motor direction control
+- PWM speed control
+- Motor-driver response
+- Integration with the linear actuator
+- Operation under mechanical load
 
-- Drive the motor forward
-- Drive the motor in reverse
-- Stop the motor
+The L298N motor driver produced significant heat during testing. It was therefore mounted on 3D-printed standoffs to improve airflow and reduce direct contact with the baseplate.
 
-This repository focuses on the electronic and software control of the mechanism. Detailed mechanical design and manufacturing are documented in the portfolio case study.
+During a static load test, the complete actuator system produced a measured compression output equivalent to **45.8 kgf**, exceeding the 40 kgf engineering target.
+
+> This was a prototype load test and not a clinical validation.
 
 ---
 
-## Software Structure
+## Limitations and Next Steps
 
-The repository contains two separate firmware programs because the ESP32 boards perform different roles.
-
-### Remote-Controller Firmware
-
-```text
-software/remote-controller/remote-controller.ino
-```
-
-Responsibilities:
-
-- Read button inputs
-- Determine the active command
-- Send commands through ESP-NOW
-- Send a stop command when no button is active
-
-### Actuator-Controller Firmware
-
-```text
-software/actuator-controller/actuator-controller.ino
-```
-
-Responsibilities:
-
-- Receive ESP-NOW messages
-- Decode movement commands
-- Control the L298N direction inputs
-- Drive or stop the DC motor
+- **Communication loss:** The current firmware does not automatically stop the motor if ESP-NOW messages are no longer received. A receiver timeout should place the motor in a default stop state.
+- **Actuator travel:** No upper or lower limit switches prevent mechanical over-travel. Hardware limits should be added.
+- **Motor driver:** The L298N produced significant heat under sustained load. A more efficient motor driver would improve reliability and power efficiency.
+- **Control feedback:** The system operates without force feedback. A calibrated force sensor could enable closed-loop force control.
+- **Emergency stop:** The prototype does not include a dedicated hardware emergency-stop circuit.
+- **Firmware robustness:** Button debouncing, command validation, and explicit handling of simultaneous button presses should be implemented.
 
 ---
 
@@ -248,10 +266,10 @@ esp32-wireless-linear-actuator/
 └── README.md
 ```
 
-- `documentation/` contains the activity and wiring diagrams for both ESP32 units.
-- `images/` contains photographs of the electronics and completed prototype.
-- `software/remote-controller/` contains the firmware for the handheld remote.
-- `software/actuator-controller/` contains the firmware for the motor-control unit.
+- `documentation/` contains the activity and wiring diagrams.
+- `images/` contains photographs from prototyping and the completed system.
+- `software/remote-controller/` contains the transmitter firmware.
+- `software/actuator-controller/` contains the receiver and motor-control firmware.
 
 ---
 
@@ -263,18 +281,10 @@ esp32-wireless-linear-actuator/
 - Arduino IDE or another compatible ESP32 development environment
 - ESP32 Arduino board package
 - ESP-NOW support included with the ESP32 framework
+- L298N motor driver
+- Compatible DC motor and power supply
 
-### 1. Configure the Receiver Address
-
-The remote-controller firmware must contain the MAC address of the actuator ESP32.
-
-```cpp
-uint8_t receiverAddress[] = {
-    0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX
-};
-```
-
-### 2. Upload the Actuator Firmware
+### Upload the Actuator Firmware
 
 Open:
 
@@ -284,7 +294,17 @@ software/actuator-controller/actuator-controller.ino
 
 Select the correct ESP32 board and serial port, then compile and upload the firmware.
 
-### 3. Upload the Remote Firmware
+### Confirm the Receiver MAC Address
+
+Verify that the MAC address in the remote-controller firmware matches the actuator ESP32:
+
+```cpp
+uint8_t broadcastAddress[] = {
+    0x4C, 0x11, 0xAE, 0xB3, 0xA0, 0x20
+};
+```
+
+### Upload the Remote Firmware
 
 Open:
 
@@ -294,66 +314,17 @@ software/remote-controller/remote-controller.ino
 
 Select the second ESP32 board and serial port, then compile and upload the firmware.
 
-### 4. Test the System
+### Initial Test
 
-Before connecting the motor to a loaded mechanism:
+Before applying mechanical load:
 
-1. Confirm that the motor remains stopped when neither button is pressed.
-2. Test the upward command.
-3. Test the downward command.
-4. Confirm that the motor direction matches the intended actuator movement.
-5. Confirm that the motor stops when the button is released.
-6. Test the actuator without mechanical load before applying full load.
-
----
-
-## Testing
-
-The electronics were developed and tested incrementally before integration into the completed prototype.
-
-Testing included:
-
-- Push-button input
-- ESP-NOW communication
-- Transmission of test values
-- Motor direction
-- Motor-driver response
-- Wireless remote operation
-- Integration with the linear actuator
-- Full-system testing under mechanical load
-
-The L298N motor driver produced significant heat during testing. It was therefore mounted on 3D-printed standoffs to improve airflow and reduce direct contact with the baseplate.
-
-A potentiometer was originally included for variable speed control. It was removed after failing late in the development process and was not required for the prototype's basic operation.
-
-A force sensor was also considered but not implemented because of sensor capacity, packaging, wiring, and integration constraints within the project timeframe.
-
-During full-system testing, the complete prototype produced a measured compression force of **45.8 kg**, exceeding the engineering target of 40 kg.
-
-> This was a prototype load test and not a clinical validation.
-
----
-
-## Known Limitations
-
-- No automatic fail-safe stops the motor if ESP-NOW communication is lost.
-- No limit switches prevent excessive actuator travel.
-- The L298N motor driver produces significant heat under sustained load.
-- The ESP32 electronics and motor use separate power sources.
-- The system uses open-loop direction control without force feedback.
-- The prototype does not include a dedicated hardware emergency stop.
-
----
-
-## Future Improvements
-
-- Add upper and lower limit switches
-- Implement communication-loss fail-safe behaviour
-- Add a hardware emergency stop
-- Replace the L298N with a more efficient motor driver
-- Use a regulated power system for the motor and control electronics
-- Add calibrated force sensing
-- Implement closed-loop force control
+1. Confirm that the motor remains stopped when both buttons are released.
+2. Test the downward command.
+3. Test the upward command.
+4. Confirm that the movement direction matches the intended actuator direction.
+5. Confirm that releasing the button stops the motor.
+6. Verify the potentiometer input and motor-speed response.
+7. Test the actuator without load before performing a loaded test.
 
 ---
 
