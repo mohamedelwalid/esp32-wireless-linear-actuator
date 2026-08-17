@@ -1,91 +1,89 @@
-int speedVal = 255;
-int downstate = 0;
-int upstate = 0;
-int ENA = 25;
-int motor1pin1 =
-32; //
-int motor1pin2 = 33; //
-unsigned long previouseMillis = 0;
-const long interval =
-500;
 #include <esp_now.h>
+#include <esp_arduino_version.h>
 #include <WiFi.h>
-// Structure example to receive
-data
-// Must match the sender structure
-typedef struct struct_message {
-int speedval;
-int downState;
-int upState;
-} struct_message;
-// Create a struct_message called
-myData
-struct_message mydata;
-// callback function that will be executed when data is
-received
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-unsigned long currentMillis = millis();
-if (currentMillis - previouseMillis >=
-interval){
-memcpy(&mydata, incomingData, sizeof(mydata));
-Serial.print("Bytes
-received: ");
-Serial.println(len);
-Serial.print("Speedval: ");
-Serial.println(mydata.speedval);
-Serial.print("upState: ");
-Serial.println(mydata.upState);
-Serial.print("downState: ");
-Serial.println(mydata.downState);
-Serial.println();
+
+namespace {
+constexpr int MOTOR_ENABLE_PIN = 25;
+constexpr int MOTOR_INPUT_1_PIN = 32;
+constexpr int MOTOR_INPUT_2_PIN = 33;
+constexpr unsigned long COMMAND_TIMEOUT_MS = 750;
+
+struct ControlMessage {
+  uint8_t downPressed;
+  uint8_t upPressed;
+  uint32_t sequence;
+};
+
+volatile ControlMessage latestCommand{};
+volatile unsigned long lastCommandTime = 0;
+
+void stopMotor() {
+  digitalWrite(MOTOR_ENABLE_PIN, LOW);
+  digitalWrite(MOTOR_INPUT_1_PIN, LOW);
+  digitalWrite(MOTOR_INPUT_2_PIN, LOW);
 }
+
+void driveDown() {
+  digitalWrite(MOTOR_INPUT_1_PIN, HIGH);
+  digitalWrite(MOTOR_INPUT_2_PIN, LOW);
+  digitalWrite(MOTOR_ENABLE_PIN, HIGH);
 }
+
+void driveUp() {
+  digitalWrite(MOTOR_INPUT_1_PIN, LOW);
+  digitalWrite(MOTOR_INPUT_2_PIN, HIGH);
+  digitalWrite(MOTOR_ENABLE_PIN, HIGH);
+}
+
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+#define ESP_NOW_RECEIVE_ARGS \
+  const esp_now_recv_info_t *, const uint8_t *incomingData, int length
+#else
+#define ESP_NOW_RECEIVE_ARGS \
+  const uint8_t *, const uint8_t *incomingData, int length
+#endif
+
+void onDataReceived(ESP_NOW_RECEIVE_ARGS) {
+  if (length != sizeof(ControlMessage)) {
+    return;
+  }
+
+  memcpy((void *)&latestCommand, incomingData, sizeof(ControlMessage));
+  lastCommandTime = millis();
+}
+}  // namespace
+
 void setup() {
-//
-Initialize Serial Monitor
-Serial.begin(115200);
-// Set device as a Wi-Fi Station
-WiFi.mode(WIFI_STA);
-// Init ESP-NOW
-if (esp_now_init() != ESP_OK) {
-Serial.println("Error initializing ESP-NOW");
-return;
+  Serial.begin(115200);
+
+  pinMode(MOTOR_ENABLE_PIN, OUTPUT);
+  pinMode(MOTOR_INPUT_1_PIN, OUTPUT);
+  pinMode(MOTOR_INPUT_2_PIN, OUTPUT);
+  stopMotor();
+
+  WiFi.mode(WIFI_STA);
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Failed to initialise ESP-NOW.");
+    return;
+  }
+
+  esp_now_register_recv_cb(onDataReceived);
 }
-// Once ESPNow
-is successfully Init, we will register for recv CB to
-// get recv packer info
-esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
-pinMode (motor1pin1, OUTPUT);
-pinMode (motor1pin2, OUTPUT);
-pinMode (ENA, OUTPUT);
-}
+
 void loop() {
-//unsigned
-long currentMillis = millis();
-int speedVal = mydata.speedval;
-int downState =
-mydata.downState;
-int upState = mydata.upState;
-if (downState == LOW){
-//speedVal = map(speedVal,0 ,4095,0 ,255 ); // gjør verdiene fra potensiometeret fra 0-1023
-til 0-255
-digitalWrite(motor1pin1, HIGH);
-digitalWrite(motor1pin2, LOW);
-analogWrite(ENA, speedVal);
-Serial.println(speedVal);
-Serial.println(downState);
-}
-else if (upState == LOW){
-//speedVal = map(speedVal,0 ,4095,0 ,255 ); // gjør verdiene
-fra potensiometeret fra 0-1023 til 0-255
-digitalWrite(motor1pin1, LOW);
-digitalWrite(motor1pin2, HIGH);
-analogWrite(ENA, speedVal);
-Serial.println(speedVal);
-Serial.println(upState);
-}
-else if (upState == HIGH && downState == HIGH) {
-digitalWrite(motor1pin1, LOW);
-digitalWrite(motor1pin2, LOW);
-}
+  if (millis() - lastCommandTime > COMMAND_TIMEOUT_MS) {
+    stopMotor();
+    return;
+  }
+
+  const bool downPressed = latestCommand.downPressed;
+  const bool upPressed = latestCommand.upPressed;
+
+  if (downPressed == upPressed) {
+    stopMotor();
+  } else if (downPressed) {
+    driveDown();
+  } else {
+    driveUp();
+  }
 }
