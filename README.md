@@ -10,12 +10,6 @@ My responsibilities were within **mechatronics and programming**, shared with on
 
 This repository covers only the **embedded software, electronics, wireless communication, and actuator-control system**. The wider product context, mechanical design, CAD, manufacturing, structural analysis, and product-development process are documented separately in the project case study on my portfolio website.
 
-<p align="center">
-  <img src="images/final-prototype.jpg" alt="Wireless linear actuator control system integrated into the final prototype" width="650">
-  <br>
-  <em>Wireless linear actuator control system integrated into the final prototype.</em>
-</p>
-
 ---
 
 ## Overview
@@ -98,7 +92,7 @@ HIGH = button released
 ### Remote-Controller Wiring
 
 <p align="center">
-  <img src="documentation/remote-wiring-diagram.svg" alt="Remote-controller wiring diagram" width="520">
+  <img src="documentation/remote-wiring-diagram.png" alt="Remote-controller wiring diagram" width="520">
   <br>
   <em>Wiring diagram for the ESP32 remote controller.</em>
 </p>
@@ -106,7 +100,7 @@ HIGH = button released
 ### Actuator-Controller Wiring
 
 <p align="center">
-  <img src="documentation/actuator-wiring-diagram.svg" alt="Actuator-controller wiring diagram" width="760">
+  <img src="documentation/actuator-wiring-diagram.png" alt="Actuator-controller wiring diagram" width="760">
   <br>
   <em>Wiring diagram for the ESP32 actuator controller, L298N motor driver, and DC motor.</em>
 </p>
@@ -120,7 +114,7 @@ The repository contains one firmware program for each ESP32.
 ### Remote Controller
 
 ```text
-software/remote-controller/remote-controller.ino
+software/remote-controller.ino
 ```
 
 The remote-controller firmware:
@@ -129,15 +123,16 @@ The remote-controller firmware:
 - Registers the actuator ESP32 as a communication peer
 - Reads the up and down buttons
 - Stores the button states in a shared message structure
-- Transmits the control message every 500 ms
-- Reports the transmission status through the serial monitor
+- Transmits the control message every 50 ms
+- Reports configuration and queueing errors through the serial monitor
 
 The transmitted message contains:
 
 ```cpp
 typedef struct {
-    int downState;
-    int upState;
+    uint8_t downPressed;
+    uint8_t upPressed;
+    uint32_t sequence;
 } ControlMessage;
 ```
 
@@ -150,7 +145,7 @@ typedef struct {
 ### Actuator Controller
 
 ```text
-software/actuator-controller/actuator-controller.ino
+software/actuator-controller.ino
 ```
 
 The actuator-controller firmware:
@@ -159,8 +154,9 @@ The actuator-controller firmware:
 - Receives the button states
 - Decodes the movement command
 - Sets the L298N direction inputs
-- Drives the motor at a fixed PWM value
-- Stops the motor when both buttons are released
+- Drives the motor in the commanded direction
+- Stops the motor when both buttons are released, both are pressed, or
+  communication is lost for 750 ms
 
 | Input state | IN1 | IN2 | Result |
 |---|---:|---:|---|
@@ -218,12 +214,15 @@ During a static load test, the actuator system produced a measured compression o
 
 ## Limitations and Next Steps
 
-- **Communication loss:** The current firmware does not automatically stop the motor if ESP-NOW messages are no longer received. A receiver timeout should place the motor in a default stop state.
+- **Communication loss:** The receiver stops the motor when no valid command has
+  been received for 750 ms. A production design would also require a
+  hardware-level safety circuit and a verified communication-loss test.
 - **Actuator travel:** No upper or lower limit switches prevent mechanical over-travel. Hardware limits should be added.
 - **Motor driver:** The L298N produced significant heat under sustained load. A more efficient motor driver would improve reliability and power efficiency.
 - **Control feedback:** The system operates without force feedback. A calibrated force sensor could enable closed-loop force control.
 - **Emergency stop:** The prototype does not include a dedicated hardware emergency-stop circuit.
-- **Firmware robustness:** Button debouncing, command validation, and explicit handling of simultaneous button presses should be implemented.
+- **Firmware robustness:** Conflicting button commands are rejected. Hardware
+  button debouncing and stronger message validation should still be added.
 
 ---
 
@@ -233,24 +232,22 @@ During a static load test, the actuator system produced a measured compression o
 esp32-wireless-linear-actuator/
 ├── documentation/
 │   ├── actuator-activity-diagram.svg
-│   ├── actuator-wiring-diagram.svg
+│   ├── actuator-wiring-diagram.png
 │   ├── remote-activity-diagram.svg
-│   └── remote-wiring-diagram.svg
+│   └── remote-wiring-diagram.png
 ├── images/
-│   ├── electronics-prototype.jpg
-│   └── final-prototype.jpg
+│   └── electronics-prototype.jpg
 ├── software/
-│   ├── actuator-controller/
-│   │   └── actuator-controller.ino
-│   └── remote-controller/
-│       └── remote-controller.ino
+│   ├── actuator-controller.ino
+│   └── remote-controller.ino
+├── .gitignore
 └── README.md
 ```
 
 - `documentation/` contains the activity and wiring diagrams.
-- `images/` contains photographs from prototyping and the completed system.
-- `software/remote-controller/` contains the transmitter firmware.
-- `software/actuator-controller/` contains the receiver and motor-control firmware.
+- `images/` contains a photograph from electronics prototyping.
+- `software/remote-controller.ino` contains the transmitter firmware.
+- `software/actuator-controller.ino` contains the receiver and motor-control firmware.
 
 ---
 
@@ -270,7 +267,7 @@ esp32-wireless-linear-actuator/
 Open:
 
 ```text
-software/actuator-controller/actuator-controller.ino
+software/actuator-controller.ino
 ```
 
 Select the correct ESP32 board and serial port, then compile and upload the firmware.
@@ -290,7 +287,7 @@ uint8_t receiverAddress[] = {
 Open:
 
 ```text
-software/remote-controller/remote-controller.ino
+software/remote-controller.ino
 ```
 
 Select the second ESP32 board and serial port, then compile and upload the firmware.
